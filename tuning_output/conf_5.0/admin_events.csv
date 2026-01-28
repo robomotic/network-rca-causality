@@ -1,0 +1,38 @@
+timestamp,actor,action,details
+2025-01-02T15:00:00,Admin,Throttle DNS to 994kbps,Bandwidth management for 11h (traffic was high)
+2025-01-02T15:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 994, 'qos': 0}"
+2025-01-03T02:00:00,Admin (Auto-Revert),Revert DNS to allow,End throttling
+2025-01-03T02:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 994, 'qos': 0}"
+2025-01-03T11:00:00,Admin,Disable RSTP,"Investigating issue, blocked for 24h"
+2025-01-03T11:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-04T11:00:00,Admin (Auto-Revert),Revert RSTP to allow,Planned maintenance end
+2025-01-04T11:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-07T10:00:00,Admin,Throttle RSTP to 703kbps,Bandwidth management for 38h (traffic was high)
+2025-01-07T10:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 703, 'qos': 0}"
+2025-01-07T13:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-09T00:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-09T00:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-13T09:00:00,Admin,Throttle HTTPS to 272kbps,Bandwidth management for 44h (traffic was high)
+2025-01-13T09:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 272, 'qos': 0}"
+2025-01-14T10:00:00,Admin,Disable SMB,"Investigating issue, blocked for 4h"
+2025-01-14T10:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-14T14:00:00,Admin (Auto-Revert),Revert SMB to allow,Planned maintenance end
+2025-01-14T14:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-14T16:00:00,Admin,Throttle HTTP to 543kbps,Bandwidth management for 37h (traffic was high)
+2025-01-14T16:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 543, 'qos': 0}"
+2025-01-15T05:00:00,Admin (Auto-Revert),Revert HTTPS to allow,End throttling
+2025-01-15T05:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 272, 'qos': 0}"
+2025-01-16T05:00:00,Admin (Auto-Revert),Revert HTTP to allow,End throttling
+2025-01-16T05:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 543, 'qos': 0}"
+2025-01-17T15:00:00,Admin,Disable SMB,"Investigating issue, blocked for 20h"
+2025-01-17T15:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-18T11:00:00,Admin (Auto-Revert),Revert SMB to allow,Planned maintenance end
+2025-01-18T11:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-21T09:00:00,Admin,Throttle SNMP to 573kbps,Bandwidth management for 26h (traffic was high)
+2025-01-21T09:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 573, 'qos': 0}"
+2025-01-22T11:00:00,Admin (Auto-Revert),Revert SNMP to allow,End throttling
+2025-01-22T11:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 573, 'qos': 0}"
+2025-01-24T12:00:00,Admin,Disable RSTP,"Investigating issue, blocked for 8h"
+2025-01-24T12:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-24T20:00:00,Admin (Auto-Revert),Revert RSTP to allow,Planned maintenance end
+2025-01-24T20:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"

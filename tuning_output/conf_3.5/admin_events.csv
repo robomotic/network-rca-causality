@@ -1,0 +1,72 @@
+timestamp,actor,action,details
+2025-01-03T14:00:00,Admin,Throttle RSTP to 937kbps,Bandwidth management for 14h (traffic was high)
+2025-01-03T14:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 937, 'qos': 0}"
+2025-01-03T17:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-03T19:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-04T04:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-04T04:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-06T13:00:00,Admin,Throttle RSTP to 129kbps,Bandwidth management for 45h (traffic was high)
+2025-01-06T13:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 129, 'qos': 0}"
+2025-01-06T16:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-06T18:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-08T09:00:00,Admin,Throttle RSTP to 154kbps,Bandwidth management for 8h (traffic was high)
+2025-01-08T09:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 154, 'qos': 0}"
+2025-01-08T10:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-08T10:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 154, 'qos': 0}"
+2025-01-08T12:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-08T17:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-08T17:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-09T13:00:00,Admin,Throttle RSTP to 392kbps,Bandwidth management for 10h (traffic was high)
+2025-01-09T13:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 392, 'qos': 0}"
+2025-01-09T14:00:00,Admin,Disable RSTP,"Investigating issue, blocked for 1h"
+2025-01-09T14:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': 392, 'qos': 0}"
+2025-01-09T15:00:00,Admin (Auto-Revert),Revert RSTP to allow,Planned maintenance end
+2025-01-09T15:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 392, 'qos': 0}"
+2025-01-09T16:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-09T23:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-09T23:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-10T13:00:00,Admin,Throttle DNS to 466kbps,Bandwidth management for 6h (traffic was high)
+2025-01-10T13:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 466, 'qos': 0}"
+2025-01-10T19:00:00,Admin (Auto-Revert),Revert DNS to allow,End throttling
+2025-01-10T19:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 466, 'qos': 0}"
+2025-01-14T11:00:00,Admin,Throttle NTP to 195kbps,Bandwidth management for 22h (traffic was high)
+2025-01-14T11:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 195, 'qos': 0}"
+2025-01-14T16:00:00,Admin,Throttle RSTP to 286kbps,Bandwidth management for 11h (traffic was high)
+2025-01-14T16:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 286, 'qos': 0}"
+2025-01-14T19:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-15T03:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-15T03:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-15T09:00:00,Admin (Auto-Revert),Revert NTP to allow,End throttling
+2025-01-15T09:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-16T12:00:00,Admin,Disable HTTPS,"Investigating issue, blocked for 3h"
+2025-01-16T12:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-16T15:00:00,Admin (Auto-Revert),Revert HTTPS to allow,Planned maintenance end
+2025-01-16T15:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-16T17:00:00,Admin,Throttle RSTP to 657kbps,Bandwidth management for 23h (traffic was high)
+2025-01-16T17:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 657, 'qos': 0}"
+2025-01-17T11:00:00,Admin,Throttle HTTP to 460kbps,Bandwidth management for 30h (traffic was high)
+2025-01-17T11:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 460, 'qos': 0}"
+2025-01-17T12:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-17T14:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-17T16:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-17T16:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-18T17:00:00,Admin (Auto-Revert),Revert HTTP to allow,End throttling
+2025-01-18T17:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-21T13:00:00,Admin,Throttle RSTP to 335kbps,Bandwidth management for 15h (traffic was high)
+2025-01-21T13:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 335, 'qos': 0}"
+2025-01-21T16:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-21T18:00:00,System,reset_defaults,All protocols reset to ALLOW
+2025-01-22T04:00:00,Admin (Auto-Revert),Revert RSTP to allow,End throttling
+2025-01-22T04:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-23T14:00:00,Admin,Throttle ICMP to 146kbps,Bandwidth management for 25h (traffic was high)
+2025-01-23T14:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.THROTTLE: 'throttle'>, 'throttle': 146, 'qos': 0}"
+2025-01-24T15:00:00,Admin (Auto-Revert),Revert ICMP to allow,End throttling
+2025-01-24T15:00:00,System,update,"{'old_action': <ActionType.THROTTLE: 'throttle'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': 146, 'qos': 0}"
+2025-01-27T09:00:00,Admin,Disable RSTP,"Investigating issue, blocked for 1h"
+2025-01-27T09:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-27T10:00:00,Admin (Auto-Revert),Revert RSTP to allow,Planned maintenance end
+2025-01-27T10:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"
+2025-01-28T16:00:00,Admin,Disable RSTP,"Investigating issue, blocked for 16h"
+2025-01-28T16:00:00,System,update,"{'old_action': <ActionType.ALLOW: 'allow'>, 'new_action': <ActionType.DENY: 'deny'>, 'throttle': None, 'qos': 0}"
+2025-01-29T08:00:00,Admin (Auto-Revert),Revert RSTP to allow,Planned maintenance end
+2025-01-29T08:00:00,System,update,"{'old_action': <ActionType.DENY: 'deny'>, 'new_action': <ActionType.ALLOW: 'allow'>, 'throttle': None, 'qos': 0}"

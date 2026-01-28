@@ -12,8 +12,10 @@ from sklearn.ensemble import IsolationForest
 import os
 
 def crash_proximity_heatmap(df, output_dir='experiments'):
-    """Visualize protocol throttling patterns in the 24h before each crash."""
-    print("\n=== Crash Proximity Heatmap ===")
+    """Analyze correlations between protocol variables before and after system crashes."""
+    print("\n=== Crash Proximity Correlation Analysis ===")
+    
+    from scipy.stats import pearsonr
     
     # Find crash times
     crash_times = df[df['crash_occurred'] == 1]['timestamp'].values
@@ -22,95 +24,108 @@ def crash_proximity_heatmap(df, output_dir='experiments'):
         print("No crashes found in data.")
         return None
     
-    # For each crash, look at the 24 hours before
-    window_hours = 24
-    proximity_data = []
-    
     protocols = ['RSTP', 'HTTP', 'HTTPS', 'DNS', 'SMB']
+    
+    # Define time windows for before/after crash analysis
+    before_window_hours = 6  # 6 hours before crash
+    after_window_hours = 6   # 6 hours after crash
+    
+    # Collect data for before/after crash periods
+    before_crash_data = []
+    after_crash_data = []
     
     for crash_time in crash_times:
         crash_dt = pd.to_datetime(crash_time)
-        start_window = crash_dt - pd.Timedelta(hours=window_hours)
         
-        # Get data in this window
-        window_mask = (df['timestamp'] >= start_window) & (df['timestamp'] < crash_dt)
-        window_df = df[window_mask].copy()
+        # Before crash window
+        before_start = crash_dt - pd.Timedelta(hours=before_window_hours)
+        before_mask = (df['timestamp'] >= before_start) & (df['timestamp'] < crash_dt)
+        before_df = df[before_mask]
         
-        if len(window_df) > 0:
-            # Track hours before crash
-            window_df['hours_before_crash'] = (crash_dt - window_df['timestamp']).dt.total_seconds() / 3600
-            
-            for _, row in window_df.iterrows():
-                data_point = {
-                    'hours_before': int(row['hours_before_crash'])
-                }
-                
-                # Add all protocol metrics
-                for proto in protocols:
-                    data_point[f'{proto}_throttled'] = row.get(f'{proto}_is_throttled', 0)
-                    data_point[f'{proto}_volume_mb'] = row.get(f'{proto}_vol', 0) / (1024 * 1024)
-                
-                proximity_data.append(data_point)
+        # After crash window  
+        after_end = crash_dt + pd.Timedelta(hours=after_window_hours)
+        after_mask = (df['timestamp'] >= crash_dt) & (df['timestamp'] < after_end)
+        after_df = df[after_mask]
+        
+        if len(before_df) > 0:
+            before_crash_data.append(before_df)
+        if len(after_df) > 0:
+            after_crash_data.append(after_df)
     
-    if not proximity_data:
+    if not before_crash_data:
         print("No proximity data found.")
         return None
     
-    prox_df = pd.DataFrame(proximity_data)
+    # Combine all before/after periods
+    before_combined = pd.concat(before_crash_data, ignore_index=True)
+    after_combined = pd.concat(after_crash_data, ignore_index=True) if after_crash_data else pd.DataFrame()
     
-    # Create comprehensive multi-protocol heatmap
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    
-    protocols = ['RSTP', 'HTTP', 'HTTPS', 'DNS', 'SMB']
-    colors = ['steelblue', 'coral', 'green', 'purple', 'orange']
-    
-    # Plot throttling frequency for each protocol
-    for idx, (proto, color) in enumerate(zip(protocols, colors)):
-        row = idx // 3
-        col = idx % 3
-        
-        throttle_col = f'{proto}_throttled'
-        if throttle_col in prox_df.columns:
-            throttle_by_hour = prox_df.groupby('hours_before')[throttle_col].mean()
-            axes[row, col].bar(throttle_by_hour.index, throttle_by_hour.values, color=color, alpha=0.7)
-            axes[row, col].set_xlabel('Hours Before Crash')
-            axes[row, col].set_ylabel('Throttling Frequency')
-            axes[row, col].set_title(f'{proto} Throttling Before Crashes')
-            axes[row, col].invert_xaxis()
-            axes[row, col].grid(axis='y', alpha=0.3)
-    
-    # Last plot: Combined throttling heatmap
-    throttle_matrix = []
-    for proto in protocols:
-        throttle_col = f'{proto}_throttled'
-        if throttle_col in prox_df.columns:
-            throttle_by_hour = prox_df.groupby('hours_before')[throttle_col].mean()
-            throttle_matrix.append(throttle_by_hour.values)
-    
-    if throttle_matrix:
-        throttle_array = np.array(throttle_matrix)
-        sns.heatmap(throttle_array, cmap='YlOrRd', annot=True, fmt='.2f', 
-                   xticklabels=range(max(prox_df['hours_before'])+1),
-                   yticklabels=protocols, ax=axes[1, 2])
-        axes[1, 2].set_title('All Protocols: Throttling Heatmap')
-        axes[1, 2].set_xlabel('Hours Before Crash')
-        axes[1, 2].set_ylabel('Protocol')
-    
-    plt.tight_layout()
-    plt.savefig(f'{output_dir}/crash_proximity_heatmap.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    print(f"Saved: {output_dir}/crash_proximity_heatmap.png")
-    
-    # Summary stats for all protocols
-    summary = {
-        'total_crashes': len(crash_times)
+    # Compute correlations between all protocol measures
+    correlation_results = {
+        'before': [],
+        'after': []
     }
     
+    # Get all variable pairs
+    variables = []
     for proto in protocols:
-        throttle_col = f'{proto}_throttled'
-        if throttle_col in prox_df.columns:
-            summary[f'{proto}_avg_throttling'] = prox_df[throttle_col].mean()
+        variables.append(f'{proto}_is_throttled')
+        variables.append(f'{proto}_vol')
+    
+    # Compute correlations for BEFORE crash period
+    print(f"\nAnalyzing {len(before_combined)} hours before {len(crash_times)} crashes...")
+    for i, var1 in enumerate(variables):
+        for var2 in variables[i+1:]:
+            if var1 in before_combined.columns and var2 in before_combined.columns:
+                try:
+                    corr, pval = pearsonr(before_combined[var1], before_combined[var2])
+                    correlation_results['before'].append({
+                        'var1': var1,
+                        'var2': var2,
+                        'correlation': corr,
+                        'p_value': pval,
+                        'significant': pval < 0.05
+                    })
+                except:
+                    pass
+    
+    # Compute correlations for AFTER crash period
+    if len(after_combined) > 0:
+        print(f"Analyzing {len(after_combined)} hours after crashes...")
+        for i, var1 in enumerate(variables):
+            for var2 in variables[i+1:]:
+                if var1 in after_combined.columns and var2 in after_combined.columns:
+                    try:
+                        corr, pval = pearsonr(after_combined[var1], after_combined[var2])
+                        correlation_results['after'].append({
+                            'var1': var1,
+                            'var2': var2,
+                            'correlation': corr,
+                            'p_value': pval,
+                            'significant': pval < 0.05
+                        })
+                    except:
+                        pass
+    
+    # Summary statistics
+    summary = {
+        'total_crashes': len(crash_times),
+        'before_hours': len(before_combined),
+        'after_hours': len(after_combined),
+        'correlations': correlation_results
+    }
+    
+    # Print top correlations
+    before_sorted = sorted(correlation_results['before'], key=lambda x: abs(x['correlation']), reverse=True)[:5]
+    print("\nTop 5 correlations BEFORE crashes:")
+    for corr in before_sorted:
+        print(f"  {corr['var1']} <-> {corr['var2']}: r={corr['correlation']:.4f}, p={corr['p_value']:.4e}")
+    
+    if correlation_results['after']:
+        after_sorted = sorted(correlation_results['after'], key=lambda x: abs(x['correlation']), reverse=True)[:5]
+        print("\nTop 5 correlations AFTER crashes:")
+        for corr in after_sorted:
+            print(f"  {corr['var1']} <-> {corr['var2']}: r={corr['correlation']:.4f}, p={corr['p_value']:.4e}")
     
     return summary
 

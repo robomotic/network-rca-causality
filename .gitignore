@@ -9,3 +9,11 @@ build/
 .coverage
 htmlcov/
 output/
+
+# Tuning reports - don't commit intermediate analysis
+experiments/CONFOUNDER_TUNING_REPORT.md
+experiments/CONFOUNDER_TUNING_FULL_REPORT.md
+
+# Temporary/backup files
+*.backup
+fix_report_section.py

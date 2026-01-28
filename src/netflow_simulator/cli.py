@@ -42,9 +42,12 @@ def main(start_date, days, output_dir, country, use_confounders, confounder_leve
         'multiplier': confounder_multiplier
     }
 
+    # Create output directory first
+    os.makedirs(output_dir, exist_ok=True)
+
     scm = SimulationSCM(confounder_settings=conf_settings)
     # Export SCM for reference
-    scm.export_graph(os.path.join(output_dir, "scm_dag.dot") if os.path.exists(output_dir) else "scm_dag.dot")
+    scm.export_graph(os.path.join(output_dir, "scm_dag.dot"))
 
     workstation_model = WorkstationModel()
     router_config = RouterConfig(supported_protocols=list(PROTOCOLS.keys()))
@@ -203,6 +206,6 @@ def main(start_date, days, output_dir, country, use_confounders, confounder_leve
 
     click.echo("Simulation complete.")
 
-import os
+
 if __name__ == "__main__":
     main()

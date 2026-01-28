@@ -1,0 +1,213 @@
+======================================================================
+CONFOUNDER TUNING - ALL LEVELS (1-5)
+======================================================================
+
+Confounding Mechanisms Enabled:
+  Level 1: Admin reacts to HTTP/HTTPS → throttles RSTP
+  Level 2: Cross-protocol traffic correlation (DNS/HTTP/HTTPS)
+  Level 3: Workstation common cause (SMB/RSTP)
+  Level 4: Post-crash recovery surges
+  Level 5: Lagged HTTP spike (3h before crashes)
+
+Objective:
+  1. Create strong spurious correlations (≥3 protocols)
+  2. PCMCI still detects RSTP → crash at lag 3
+  3. Quantify false positive rate in PCMCI
+
+======================================================================
+Running simulation: multiplier=3.0, ALL levels (1-5)
+======================================================================
+Initializing simulation for 30 days starting 2025-01-01...
+Confounders enabled: [1, 2, 3, 4, 5] (multiplier: 3.0)
+Simulating Hours:   0%|          | 0/720 [00:00<?, ?it/s]Simulating Hours:   5%|▌         | 36/720 [00:00<00:01, 353.73it/s]Simulating Hours:  10%|█         | 72/720 [00:00<00:01, 328.08it/s]Simulating Hours:  18%|█▊        | 132/720 [00:00<00:01, 397.75it/s]Simulating Hours:  24%|██▍       | 172/720 [00:00<00:01, 361.67it/s]Simulating Hours:  29%|██▉       | 209/720 [00:00<00:01, 285.11it/s]Simulating Hours:  33%|███▎      | 240/720 [00:00<00:01, 266.14it/s]Simulating Hours:  42%|████▏     | 304/720 [00:00<00:01, 358.77it/s]Simulating Hours:  48%|████▊     | 345/720 [00:01<00:01, 370.43it/s]Simulating Hours:  53%|█████▎    | 385/720 [00:01<00:01, 297.60it/s]Simulating Hours:  58%|█████▊    | 419/720 [00:01<00:01, 280.27it/s]Simulating Hours:  68%|██████▊   | 491/720 [00:01<00:00, 382.30it/s]Simulating Hours:  74%|███████▍  | 534/720 [00:01<00:00, 322.57it/s]Simulating Hours:  79%|███████▉  | 571/720 [00:01<00:00, 275.73it/s]Simulating Hours:  88%|████████▊ | 637/720 [00:01<00:00, 354.16it/s]Simulating Hours:  94%|█████████▍| 679/720 [00:02<00:00, 310.86it/s]Simulating Hours:  99%|█████████▉| 715/720 [00:02<00:00, 267.67it/s]Simulating Hours: 100%|██████████| 720/720 [00:02<00:00, 311.50it/s]
+Exporting data...
+Traffic flows exported to tuning_output/conf_3.0/traffic_flows.csv
+Admin events exported to tuning_output/conf_3.0/admin_events.csv
+System events exported to tuning_output/conf_3.0/system_events.csv
+Ground truth exported to tuning_output/conf_3.0/ground_truth_faults.csv
+Generating summary...
+Simulation summary exported to tuning_output/conf_3.0/summary.md
+Simulation complete.
+
+======================================================================
+ANALYSIS: MULTIPLIER = 3.0 (Crashes: 8)
+======================================================================
+
+--- Pearson Correlation (Throttle → Crash) ---
+RSTP       throttle: r= 0.4484, p=6.6662e-37 *** ← TRUE CAUSE
+DNS        throttle: r=-0.0375, p=3.1528e-01     
+
+--- PCMCI Causal Discovery (tau_max=6) ---
+  RSTP       lag1: val=-0.1640, p<0.05
+  RSTP       lag2: val= 0.8084, p<0.05
+  RSTP       lag3: val=-0.5766, p<0.05 ← CORRECT CAUSAL LINK!
+  RSTP       lag4: val= 0.4043, p<0.05
+  RSTP       lag5: val= 0.3546, p<0.05
+  DNS        lag3: val=-0.0753, p<0.05 ← FALSE POSITIVE!
+  DNS        lag4: val= 0.1095, p<0.05 ← FALSE POSITIVE!
+  DNS        lag5: val=-0.1676, p<0.05 ← FALSE POSITIVE!
+  DNS        lag6: val=-0.0849, p<0.05 ← FALSE POSITIVE!
+
+--- Score Breakdown ---
+Spurious correlations: 0/4 non-RSTP protocols
+RSTP lag-3 detected: ✓ YES
+PCMCI false positives: 1
+
+======================================================================
+Running simulation: multiplier=3.5, ALL levels (1-5)
+======================================================================
+Initializing simulation for 30 days starting 2025-01-01...
+Confounders enabled: [1, 2, 3, 4, 5] (multiplier: 3.5)
+Simulating Hours:   0%|          | 0/720 [00:00<?, ?it/s]Simulating Hours:   5%|▌         | 38/720 [00:00<00:01, 371.79it/s]Simulating Hours:  11%|█         | 76/720 [00:00<00:02, 300.28it/s]Simulating Hours:  19%|█▉        | 137/720 [00:00<00:01, 422.30it/s]Simulating Hours:  25%|██▌       | 182/720 [00:00<00:01, 360.74it/s]Simulating Hours:  31%|███       | 221/720 [00:00<00:01, 329.70it/s]Simulating Hours:  36%|███▌      | 256/720 [00:00<00:01, 319.80it/s]Simulating Hours:  44%|████▍     | 320/720 [00:00<00:00, 407.62it/s]Simulating Hours:  51%|█████     | 364/720 [00:01<00:01, 334.53it/s]Simulating Hours:  56%|█████▌    | 401/720 [00:01<00:01, 272.16it/s]Simulating Hours:  61%|██████▏   | 441/720 [00:01<00:00, 291.34it/s]Simulating Hours:  69%|██████▉   | 499/720 [00:01<00:00, 350.95it/s]Simulating Hours:  75%|███████▍  | 538/720 [00:01<00:00, 354.04it/s]Simulating Hours:  80%|████████  | 576/720 [00:01<00:00, 288.70it/s]Simulating Hours:  88%|████████▊ | 634/720 [00:01<00:00, 340.25it/s]Simulating Hours:  93%|█████████▎| 672/720 [00:02<00:00, 314.77it/s]Simulating Hours:  98%|█████████▊| 706/720 [00:02<00:00, 295.27it/s]Simulating Hours: 100%|██████████| 720/720 [00:02<00:00, 320.03it/s]
+Exporting data...
+Traffic flows exported to tuning_output/conf_3.5/traffic_flows.csv
+Admin events exported to tuning_output/conf_3.5/admin_events.csv
+System events exported to tuning_output/conf_3.5/system_events.csv
+Ground truth exported to tuning_output/conf_3.5/ground_truth_faults.csv
+Generating summary...
+Simulation summary exported to tuning_output/conf_3.5/summary.md
+Simulation complete.
+
+======================================================================
+ANALYSIS: MULTIPLIER = 3.5 (Crashes: 11)
+======================================================================
+
+--- Pearson Correlation (Throttle → Crash) ---
+RSTP       throttle: r= 0.2434, p=3.5769e-11 *** ← TRUE CAUSE
+HTTP       throttle: r= 0.2994, p=2.2298e-16 *** ← SPURIOUS!
+DNS        throttle: r=-0.0114, p=7.5971e-01     
+
+--- PCMCI Causal Discovery (tau_max=6) ---
+  RSTP       lag1: val=-0.2770, p<0.05
+  RSTP       lag2: val= 0.6586, p<0.05
+  RSTP       lag3: val=-0.3403, p<0.05 ← CORRECT CAUSAL LINK!
+  RSTP       lag6: val=-0.1146, p<0.05
+  HTTP       lag2: val= 0.2120, p<0.05 ← FALSE POSITIVE!
+  HTTP       lag3: val= 0.1720, p<0.05 ← FALSE POSITIVE!
+
+--- Score Breakdown ---
+Spurious correlations: 1/4 non-RSTP protocols
+RSTP lag-3 detected: ✓ YES
+PCMCI false positives: 1
+
+======================================================================
+Running simulation: multiplier=4.0, ALL levels (1-5)
+======================================================================
+Initializing simulation for 30 days starting 2025-01-01...
+Confounders enabled: [1, 2, 3, 4, 5] (multiplier: 4.0)
+Simulating Hours:   0%|          | 0/720 [00:00<?, ?it/s]Simulating Hours:   5%|▌         | 37/720 [00:00<00:01, 359.09it/s]Simulating Hours:  10%|█         | 73/720 [00:00<00:02, 261.81it/s]Simulating Hours:  18%|█▊        | 133/720 [00:00<00:01, 388.25it/s]Simulating Hours:  24%|██▍       | 176/720 [00:00<00:01, 306.28it/s]Simulating Hours:  29%|██▉       | 211/720 [00:00<00:02, 220.70it/s]Simulating Hours:  33%|███▎      | 238/720 [00:01<00:02, 181.45it/s]Simulating Hours:  42%|████▏     | 301/720 [00:01<00:01, 266.00it/s]Simulating Hours:  47%|████▋     | 336/720 [00:01<00:01, 248.26it/s]Simulating Hours:  51%|█████     | 367/720 [00:01<00:01, 254.08it/s]Simulating Hours:  55%|█████▌    | 397/720 [00:01<00:01, 216.44it/s]Simulating Hours:  59%|█████▊    | 422/720 [00:01<00:01, 218.39it/s]Simulating Hours:  68%|██████▊   | 491/720 [00:01<00:00, 323.57it/s]Simulating Hours:  73%|███████▎  | 529/720 [00:02<00:00, 264.85it/s]Simulating Hours:  78%|███████▊  | 561/720 [00:02<00:00, 250.88it/s]Simulating Hours:  84%|████████▍ | 607/720 [00:02<00:00, 295.94it/s]Simulating Hours:  89%|████████▉ | 641/720 [00:02<00:00, 278.32it/s]Simulating Hours:  94%|█████████▍| 675/720 [00:02<00:00, 292.39it/s]Simulating Hours:  98%|█████████▊| 707/720 [00:02<00:00, 254.55it/s]Simulating Hours: 100%|██████████| 720/720 [00:02<00:00, 258.70it/s]
+Exporting data...
+Traffic flows exported to tuning_output/conf_4.0/traffic_flows.csv
+Admin events exported to tuning_output/conf_4.0/admin_events.csv
+System events exported to tuning_output/conf_4.0/system_events.csv
+Ground truth exported to tuning_output/conf_4.0/ground_truth_faults.csv
+Generating summary...
+Simulation summary exported to tuning_output/conf_4.0/summary.md
+Simulation complete.
+
+======================================================================
+ANALYSIS: MULTIPLIER = 4.0 (Crashes: 5)
+======================================================================
+
+--- Pearson Correlation (Throttle → Crash) ---
+RSTP       throttle: r= 0.4422, p=7.9804e-36 *** ← TRUE CAUSE
+
+--- PCMCI Causal Discovery (tau_max=6) ---
+  RSTP       lag1: val=-0.1921, p<0.05
+  RSTP       lag2: val= 0.7616, p<0.05
+  RSTP       lag3: val=-0.6335, p<0.05 ← CORRECT CAUSAL LINK!
+  RSTP       lag4: val= 0.4210, p<0.05
+  RSTP       lag6: val=-0.4055, p<0.05
+
+--- Score Breakdown ---
+Spurious correlations: 0/4 non-RSTP protocols
+RSTP lag-3 detected: ✓ YES
+PCMCI false positives: 0
+
+======================================================================
+Running simulation: multiplier=4.5, ALL levels (1-5)
+======================================================================
+Initializing simulation for 30 days starting 2025-01-01...
+Confounders enabled: [1, 2, 3, 4, 5] (multiplier: 4.5)
+Simulating Hours:   0%|          | 0/720 [00:00<?, ?it/s]Simulating Hours:   5%|▌         | 38/720 [00:00<00:01, 348.94it/s]Simulating Hours:  10%|█         | 73/720 [00:00<00:02, 299.51it/s]Simulating Hours:  18%|█▊        | 131/720 [00:00<00:01, 401.12it/s]Simulating Hours:  24%|██▍       | 172/720 [00:00<00:01, 357.64it/s]Simulating Hours:  29%|██▉       | 209/720 [00:00<00:01, 288.93it/s]Simulating Hours:  33%|███▎      | 240/720 [00:00<00:01, 259.94it/s]Simulating Hours:  42%|████▏     | 301/720 [00:00<00:01, 316.87it/s]Simulating Hours:  46%|████▋     | 334/720 [00:01<00:01, 255.50it/s]Simulating Hours:  50%|█████     | 362/720 [00:01<00:01, 230.74it/s]Simulating Hours:  55%|█████▌    | 397/720 [00:01<00:01, 252.60it/s]Simulating Hours:  65%|██████▌   | 470/720 [00:01<00:00, 363.23it/s]Simulating Hours:  71%|███████   | 511/720 [00:01<00:00, 337.05it/s]Simulating Hours:  76%|███████▋  | 549/720 [00:01<00:00, 281.41it/s]Simulating Hours:  81%|████████  | 581/720 [00:02<00:00, 268.69it/s]Simulating Hours:  89%|████████▉ | 640/720 [00:02<00:00, 338.11it/s]Simulating Hours:  94%|█████████▍| 678/720 [00:02<00:00, 295.27it/s]Simulating Hours:  99%|█████████▉| 711/720 [00:02<00:00, 289.56it/s]Simulating Hours: 100%|██████████| 720/720 [00:02<00:00, 290.42it/s]
+Exporting data...
+Traffic flows exported to tuning_output/conf_4.5/traffic_flows.csv
+Admin events exported to tuning_output/conf_4.5/admin_events.csv
+System events exported to tuning_output/conf_4.5/system_events.csv
+Ground truth exported to tuning_output/conf_4.5/ground_truth_faults.csv
+Generating summary...
+Simulation summary exported to tuning_output/conf_4.5/summary.md
+Simulation complete.
+
+======================================================================
+ANALYSIS: MULTIPLIER = 4.5 (Crashes: 9)
+======================================================================
+
+--- Pearson Correlation (Throttle → Crash) ---
+RSTP       throttle: r= 0.3463, p=1.0324e-21 *** ← TRUE CAUSE
+HTTP       throttle: r=-0.0250, p=5.0220e-01     
+
+--- PCMCI Causal Discovery (tau_max=6) ---
+  RSTP       lag1: val=-0.2167, p<0.05
+  RSTP       lag2: val= 0.8273, p<0.05
+  RSTP       lag3: val=-0.7024, p<0.05 ← CORRECT CAUSAL LINK!
+  RSTP       lag4: val= 0.5350, p<0.05
+  RSTP       lag5: val=-0.2086, p<0.05
+  RSTP       lag6: val=-0.4179, p<0.05
+
+--- Score Breakdown ---
+Spurious correlations: 0/4 non-RSTP protocols
+RSTP lag-3 detected: ✓ YES
+PCMCI false positives: 0
+
+======================================================================
+Running simulation: multiplier=5.0, ALL levels (1-5)
+======================================================================
+Initializing simulation for 30 days starting 2025-01-01...
+Confounders enabled: [1, 2, 3, 4, 5] (multiplier: 5.0)
+Simulating Hours:   0%|          | 0/720 [00:00<?, ?it/s]Simulating Hours:   5%|▌         | 37/720 [00:00<00:01, 359.08it/s]Simulating Hours:  10%|█         | 73/720 [00:00<00:02, 232.04it/s]Simulating Hours:  18%|█▊        | 133/720 [00:00<00:01, 341.00it/s]Simulating Hours:  24%|██▍       | 171/720 [00:00<00:02, 266.91it/s]Simulating Hours:  28%|██▊       | 202/720 [00:00<00:01, 268.14it/s]Simulating Hours:  32%|███▏      | 232/720 [00:00<00:02, 236.57it/s]Simulating Hours:  42%|████▏     | 300/720 [00:01<00:01, 312.15it/s]Simulating Hours:  46%|████▋     | 333/720 [00:01<00:01, 296.81it/s]Simulating Hours:  51%|█████     | 364/720 [00:01<00:01, 288.32it/s]Simulating Hours:  55%|█████▍    | 395/720 [00:01<00:01, 293.26it/s]Simulating Hours:  59%|█████▉    | 425/720 [00:01<00:01, 285.71it/s]Simulating Hours:  68%|██████▊   | 493/720 [00:01<00:00, 390.69it/s]Simulating Hours:  74%|███████▍  | 534/720 [00:01<00:00, 301.63it/s]Simulating Hours:  79%|███████▉  | 569/720 [00:02<00:00, 255.36it/s]Simulating Hours:  88%|████████▊ | 635/720 [00:02<00:00, 335.34it/s]Simulating Hours:  94%|█████████▎| 674/720 [00:02<00:00, 256.90it/s]Simulating Hours:  98%|█████████▊| 706/720 [00:02<00:00, 259.28it/s]Simulating Hours: 100%|██████████| 720/720 [00:02<00:00, 277.06it/s]
+Exporting data...
+Traffic flows exported to tuning_output/conf_5.0/traffic_flows.csv
+Admin events exported to tuning_output/conf_5.0/admin_events.csv
+System events exported to tuning_output/conf_5.0/system_events.csv
+Ground truth exported to tuning_output/conf_5.0/ground_truth_faults.csv
+Generating summary...
+Simulation summary exported to tuning_output/conf_5.0/summary.md
+Simulation complete.
+
+======================================================================
+ANALYSIS: MULTIPLIER = 5.0 (Crashes: 1)
+======================================================================
+
+--- Pearson Correlation (Throttle → Crash) ---
+RSTP       throttle: r= 0.5765, p=5.1478e-65 *** ← TRUE CAUSE
+HTTP       throttle: r=-0.0087, p=8.1614e-01     
+HTTPS      throttle: r=-0.0095, p=7.9883e-01     
+DNS        throttle: r=-0.0046, p=9.0098e-01     
+
+--- PCMCI Causal Discovery (tau_max=6) ---
+  RSTP       lag1: val= 0.2498, p<0.05
+  RSTP       lag2: val= 0.6538, p<0.05
+  RSTP       lag3: val=-0.6659, p<0.05 ← CORRECT CAUSAL LINK!
+  RSTP       lag4: val=-0.2570, p<0.05
+
+--- Score Breakdown ---
+Spurious correlations: 0/4 non-RSTP protocols
+RSTP lag-3 detected: ✓ YES
+PCMCI false positives: 0
+
+======================================================================
+FINAL SUMMARY
+======================================================================
+
+Mult.    Crashes    Spurious     RSTP OK    Causal     FalsePos   Score
+----------------------------------------------------------------------
+3.0      8          0            ✓          2          1          55/100
+3.5      11         1            ✓          2          1          65/100
+4.0      5          0            ✓          1          0          60/100
+4.5      9          0            ✓          1          0          60/100
+5.0      1          0            ✓          1          0          60/100
+Traceback (most recent call last):
+  File "<stdin>", line 205, in <module>
+  File "<stdin>", line 205, in <lambda>
+KeyError: 'score'

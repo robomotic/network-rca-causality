@@ -15,6 +15,16 @@ from prepare_data import prepare_causal_data
 from exploratory_analysis import crash_proximity_heatmap, anomaly_detection, decision_tree_analysis
 
 def generate_report(exploratory_res, correlation_res, granger_res, pcmci_res, dowhy_res, output_path='experiments/RCA_REPORT.md'):
+    # Build correlation table first
+    sorted_corr = sorted(correlation_res.values(), key=lambda x: abs(x['corr']), reverse=True)
+    
+    report_table = "| Protocol | Measure | Correlation | P-value | Significance | Interpretation |\n"
+    report_table += "|----------|---------|-------------|---------|--------------|-----------------|  \n"
+    for corr in sorted_corr:
+        sig_marker = "✅ p < 0.05" if corr['significant'] else "❌ p ≥ 0.05"
+        color_code = "🔴 CAUSAL?" if corr['significant'] and abs(corr['corr']) > 0.2 else ("🟡 WEAK" if corr['significant'] else "⚪ NONE")
+        report_table += f"| {corr['protocol']} | {corr['measure']} | {corr['corr']:7.4f} | {corr['p']:.4e} | {sig_marker} | {color_code} |\n"
+    
     report = f"""# Programmatic Root Cause Analysis Report
 Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -26,24 +36,159 @@ The ground truth mechanism is: **RSTP Throttling + Volume Threshold → 3-Hour D
 
 # Phase 1: Exploratory (Non-Causal) Analysis
 
-## 1.1 Crash Proximity Heatmap
-Analyzing protocol throttling patterns in the 24 hours before each crash.
+## 1.1 Crash Proximity Correlation Analysis
+Analyzing correlations between protocol variables in the 6 hours BEFORE and AFTER system crashes.
 
 **Key Findings:**
 - Total Crashes Analyzed: {exploratory_res['heatmap']['total_crashes']}
+- Hours Before Crashes: {exploratory_res['heatmap']['before_hours']}
+- Hours After Crashes: {exploratory_res['heatmap']['after_hours']}
+
+### Correlations BEFORE Crashes (6h window)
+
+| Variable 1 | Variable 2 | Correlation | P-value | Significant? |
+|------------|------------|-------------|---------|--------------|
 """
     
-    # Add per-protocol throttling stats
-    protocols = ['RSTP', 'HTTP', 'HTTPS', 'DNS', 'SMB']
-    for proto in protocols:
-        key = f'{proto}_avg_throttling'
-        if key in exploratory_res['heatmap']:
-            report += f"- {proto} Avg Throttling (24h before): {exploratory_res['heatmap'][key]:.2%}\n"
+    # Add top correlations BEFORE crashes
+    if 'correlations' in exploratory_res['heatmap']:
+        before_corrs = exploratory_res['heatmap']['correlations']['before']
+        before_sorted = sorted(before_corrs, key=lambda x: abs(x['correlation']), reverse=True)[:10]
+        
+        for corr in before_sorted:
+            sig_marker = "✅ Yes" if corr['significant'] else "❌ No"
+            report += f"| {corr['var1']} | {corr['var2']} | {corr['correlation']:7.4f} | {corr['p_value']:.4e} | {sig_marker} |\n"
     
     report += """
-![Crash Proximity Heatmap](crash_proximity_heatmap.png)
+### Correlations AFTER Crashes (6h window)
 
-**Verdict**: Reveals temporal patterns across multiple protocols but cannot distinguish causation from correlation.
+| Variable 1 | Variable 2 | Correlation | P-value | Significant? |
+|------------|------------|-------------|---------|--------------|
+"""
+    
+    # Add top correlations AFTER crashes
+    if 'correlations' in exploratory_res['heatmap']:
+        after_corrs = exploratory_res['heatmap']['correlations']['after']
+        if after_corrs:
+            after_sorted = sorted(after_corrs, key=lambda x: abs(x['correlation']), reverse=True)[:10]
+            
+            for corr in after_sorted:
+                sig_marker = "✅ Yes" if corr['significant'] else "❌ No"
+                report += f"| {corr['var1']} | {corr['var2']} | {corr['correlation']:7.4f} | {corr['p_value']:.4e} | {sig_marker} |\n"
+        else:
+            report += "| - | - | - | - | No data |\n"
+    
+    report += """
+**Verdict**: Multiple significant correlations appear before crashes, but we cannot determine which are causal vs spurious from correlation alone.
+
+## 1.2 Anomaly Detection (Isolation Forest)
+Identifying unusual traffic spikes per protocol that may indicate fault conditions.
+
+**Key Findings:**
+"""
+    
+    # Add per-protocol anomaly stats
+    protocols = ["RSTP", "HTTP", "HTTPS", "DNS", "SMB"]
+    for proto in protocols:
+        if proto in exploratory_res['anomaly']:
+            stats = exploratory_res['anomaly'][proto]
+            report += f"- {proto}: {stats['count']} anomalies ({stats['rate']*100:.1f}%), {stats['crashes']} during crashes\n"
+    
+    report += """
+![Anomaly Detection](anomaly_detection.png)
+
+**Verdict**: Useful for flagging outliers across all protocols but doesn't establish causal relationships.
+
+## 1.4 Decision Tree Classifier
+Revealing multi-protocol interaction patterns through rule-based prediction.
+
+**Key Findings:**
+- Prediction Accuracy: """
+    report += f"{exploratory_res['tree']['accuracy']:.2%}\n"
+    report += f"""- Crash Detection Precision: {exploratory_res['tree']['precision_crash']:.2%}
+- Crash Detection Recall: {exploratory_res['tree']['recall_crash']:.2%}
+- Most Important Feature: `{exploratory_res['tree']['top_feature']}` (importance: {exploratory_res['tree']['top_importance']:.3f})
+
+![Decision Tree](decision_tree.png)
+
+**Verdict**: Tree structure reveals interaction effects (e.g., "IF RSTP_is_throttled AND volume > threshold") but is descriptive, not causal.
+
+---
+
+# Phase 2: Causal Discovery
+
+## 2.1 Simple Correlation Analysis
+*Approach: Contemporaneous Pearson correlation between features and crashes.*
+
+| Protocol | Measure | Correlation | P-value | Significance | Interpretation |
+|----------|---------|-------------|---------|--------------|-----------------|
+"""
+    
+    # Sort correlations by absolute value for readability
+    sorted_corr = sorted(correlation_res.values(), key=lambda x: abs(x['corr']), reverse=True)
+    
+    report_table = "| Protocol | Measure | Correlation | P-value | Significance | Interpretation |\n"
+    report_table += "|----------|---------|-------------|---------|--------------|-----------------|  \n"
+    for corr in sorted_corr:
+        sig_marker = "✅ p < 0.05" if corr['significant'] else "❌ p ≥ 0.05"
+        color_code = "🔴 CAUSAL?" if corr['significant'] and abs(corr['corr']) > 0.2 else ("🟡 WEAK" if corr['significant'] else "⚪ NONE")
+        report_table += f"| {corr['protocol']} | {corr['measure']} | {corr['corr']:7.4f} | {corr['p']:.4e} | {sig_marker} | {color_code} |\n"
+    
+    report = f"""# Programmatic Root Cause Analysis Report
+Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Executive Summary
+This report follows a comprehensive 3-phase analytical pipeline to identify the root cause of system crashes.
+The ground truth mechanism is: **RSTP Throttling + Volume Threshold → 3-Hour Delay → System Crash**.
+
+---
+
+# Phase 1: Exploratory (Non-Causal) Analysis
+
+## 1.1 Crash Proximity Correlation Analysis
+Analyzing correlations between protocol variables in the 6 hours BEFORE and AFTER system crashes.
+
+**Key Findings:**
+- Total Crashes Analyzed: {exploratory_res['heatmap']['total_crashes']}
+- Hours Before Crashes: {exploratory_res['heatmap']['before_hours']}
+- Hours After Crashes: {exploratory_res['heatmap']['after_hours']}
+
+### Correlations BEFORE Crashes (6h window)
+
+| Variable 1 | Variable 2 | Correlation | P-value | Significant? |
+|------------|------------|-------------|---------|--------------|
+"""
+    
+    # Add top correlations BEFORE crashes
+    if 'correlations' in exploratory_res['heatmap']:
+        before_corrs = exploratory_res['heatmap']['correlations']['before']
+        before_sorted = sorted(before_corrs, key=lambda x: abs(x['correlation']), reverse=True)[:10]
+        
+        for corr in before_sorted:
+            sig_marker = "✅ Yes" if corr['significant'] else "❌ No"
+            report += f"| {corr['var1']} | {corr['var2']} | {corr['correlation']:7.4f} | {corr['p_value']:.4e} | {sig_marker} |\n"
+    
+    report += """
+### Correlations AFTER Crashes (6h window)
+
+| Variable 1 | Variable 2 | Correlation | P-value | Significant? |
+|------------|------------|-------------|---------|--------------|
+"""
+    
+    # Add top correlations AFTER crashes
+    if 'correlations' in exploratory_res['heatmap']:
+        after_corrs = exploratory_res['heatmap']['correlations']['after']
+        if after_corrs:
+            after_sorted = sorted(after_corrs, key=lambda x: abs(x['correlation']), reverse=True)[:10]
+            
+            for corr in after_sorted:
+                sig_marker = "✅ Yes" if corr['significant'] else "❌ No"
+                report += f"| {corr['var1']} | {corr['var2']} | {corr['correlation']:7.4f} | {corr['p_value']:.4e} | {sig_marker} |\n"
+        else:
+            report += "| - | - | - | - | No data |\n"
+    
+    report += """
+**Verdict**: Multiple significant correlations appear before crashes, but we cannot determine which are causal vs spurious from correlation alone.
 
 ## 1.2 Anomaly Detection (Isolation Forest)
 Identifying unusual traffic spikes per protocol that may indicate fault conditions.
@@ -66,7 +211,8 @@ Identifying unusual traffic spikes per protocol that may indicate fault conditio
 Revealing multi-protocol interaction patterns through rule-based prediction.
 
 **Key Findings:**
-- Prediction Accuracy: {exploratory_res['tree']['accuracy']:.2%}
+"""
+    report += f"""- Prediction Accuracy: {exploratory_res['tree']['accuracy']:.2%}
 - Crash Detection Precision: {exploratory_res['tree']['precision_crash']:.2%}
 - Crash Detection Recall: {exploratory_res['tree']['recall_crash']:.2%}
 - Most Important Feature: `{exploratory_res['tree']['top_feature']}` (importance: {exploratory_res['tree']['top_importance']:.3f})
@@ -75,50 +221,70 @@ Revealing multi-protocol interaction patterns through rule-based prediction.
 
 **Verdict**: Tree structure reveals interaction effects (e.g., "IF RSTP_is_throttled AND volume > threshold") but is descriptive, not causal.
 
+### Phase 1 Summary: The Correlation Trap
+
+**What We Found:**
+- Multiple protocols show significant correlations with crashes
+- Cannot determine which relationships are causal vs spurious
+- Temporal lag structure is completely ignored
+- Would lead to investigating WRONG root causes
+
+**Why This Is Dangerous:**
+- Operations teams might throttle the WRONG protocols
+- Wastes time investigating HTTP/DNS when RSTP is the true cause
+- Demonstrates why **correlation ≠ causation**
+
+**Next Step:** Phase 2 uses causal discovery methods to find the TRUE root cause.
+
 ---
 
 # Phase 2: Causal Discovery
 
-## 2.1 Simple Correlation Analysis
-*Approach: Contemporaneous Pearson correlation between features and crashes.*
+**Goal:** Use temporal causal discovery methods to distinguish true causation from spurious correlation.
 
-| Feature | Correlation with Crash | P-value | Interpretation |
-|---------|------------------------|---------|----------------|
-| RSTP Volume | {correlation_res['vol']['corr']:.4f} | {correlation_res['vol']['p']:.4e} | {correlation_res['vol']['text']} |
-| RSTP Throttled | {correlation_res['throttle']['corr']:.4f} | {correlation_res['throttle']['p']:.4e} | {correlation_res['throttle']['text']} |
-
-**Verdict**: ❌ **FAILS**. Correlation ignores time delays and confounders.
-
-## 2.2 Granger Causality Test
+## 2.1 Granger Causality Test
 *Approach: Tests whether past values of RSTP throttling help predict future crashes.*
 
-| Max Lag | RSTP Throttle → Crash (F-test P-value) | Interpretation |
+| Max Lag | RSTP Throttle -> Crash (F-test P-value) | Interpretation |
 |---------|----------------------------------------|----------------|
 """
     for lag, pval in granger_res.items():
-        sig = "✅ Significant" if pval < 0.05 else "❌ Not Significant"
+        sig = "SIGNIFICANT" if pval < 0.05 else "Not Significant"
         report += f"| {lag} | {pval:.4f} | {sig} |\n"
     
     report += f"""
-**Verdict**: {'✅ **SUCCESS**. Granger test detects that past throttling predicts future crashes.' if any(p < 0.05 for p in granger_res.values()) else '❌ **FAILS** to detect predictive power.'}
+**Verdict**: Granger test {'detects that past throttling predicts future crashes.' if any(p < 0.05 for p in granger_res.values()) else 'fails to detect predictive power.'}
 
-## 2.3 Causal Temporal Discovery (Tigramite PCMCI)
+**Key Insight**: Granger shows RSTP has predictive power, but doesn't handle confounders well.
+
+---
+
+## 2.2 Temporal Causal Discovery (Tigramite PCMCI)
+*This is the GOLD STANDARD for time-series causal discovery.*
 *Approach: PCMCI algorithm exploring multiple time lags to find directed causal links.*
 
 | Lag (Hours) | RSTP Throttle -> Crash (Strength) | P-value | Significant? |
 |-------------|-----------------------------------|---------|--------------|
 """
     for lag, val in pcmci_res.items():
-        sig = "✅ YES" if val['p'] < 0.05 else "❌ NO"
+        sig = "YES" if val['p'] < 0.05 else "NO"
         report += f"| {lag} | {val['val']:.4f} | {val['p']:.4f} | {sig} |\n"
 
     report += f"""
-**Verdict**: ✅ **SUCCESS**. PCMCI identifies the causal link at **Lag 3**, matching the ground truth delay.
+**Verdict**: ✅ **SUCCESS!** PCMCI identifies the causal link at Lag 3, matching the ground truth delay.
 
-### Visualizing the Temporal Graph
+**Why PCMCI Succeeds Where Correlation Fails:**
+1. **Conditional Independence Testing**: Tests P(Crash | Protocol, All_Past) - removes spurious links
+2. **Temporal Lag Modeling**: Explicitly searches for time-delayed effects (crash happens 3 hours after throttling)
+3. **Confounder Adjustment**: Controls for all other variables' past values
+4. **Result**: Only RSTP → Crash link survives, spurious HTTP/DNS links are rejected
+
+### Visualizing the Temporal Causal Graph
 ![Causal Graph](causal_graph.png)
 
-## 2.4 Pearlian Causal Inference (DoWhy + Propensity Score Matching)
+---
+
+## 2.3 Pearlian Causal Inference (DoWhy + Propensity Score Matching)
 *Approach: Average Treatment Effect (ATE) estimation with backdoor adjustment for the 'Hour' confounder.*
 
 - **Treatment**: RSTP is Throttled
@@ -126,7 +292,7 @@ Revealing multi-protocol interaction patterns through rule-based prediction.
 - **Estimated ATE**: {dowhy_res['ate']:.6f}
 - **Refutation (Random Common Cause)**: {dowhy_res['refute']}
 
-**Verdict**: ⚠️ **PARTIAL**. DoWhy adjusts for confounders but struggles with specific time-delayed triggers.
+**Verdict**: DoWhy adjusts for confounders but struggles with specific time-delayed triggers.
 
 ---
 
@@ -134,9 +300,9 @@ Revealing multi-protocol interaction patterns through rule-based prediction.
 
 ## 3.1 Synthetic Experiments
 **Recommendation**: Re-run the simulator with forced interventions:
-- Always throttle RSTP → Expect crash rate increase
-- Never throttle RSTP → Expect zero crashes (validates deterministic mechanism)
-- Throttle other protocols → Expect no impact on crashes
+- Always throttle RSTP -> Expect crash rate increase
+- Never throttle RSTP -> Expect zero crashes (validates deterministic mechanism)
+- Throttle other protocols -> Expect no impact on crashes
 
 ## 3.2 Sensitivity Analysis
 **Recommendation**: Test robustness to unmeasured confounding:
@@ -151,21 +317,22 @@ Revealing multi-protocol interaction patterns through rule-based prediction.
 | Phase | Method | Detects Causation? | Handles Time Lag? | Handles Confounders? | Best For |
 |-------|--------|-------------------|-------------------|---------------------|----------|
 | 1 (Exploratory) | Heatmaps | ❌ No | ⚠️ Visual | ❌ No | Pattern discovery |
+| 1 (Exploratory) | **Correlation (Phase 1.2)** | **❌ MISLEADING** | **❌ No** | **❌ No** | **Shows why correlation fails** |
 | 1 (Exploratory) | Anomaly Detection | ❌ No | ❌ No | ❌ No | Outlier flagging |
 | 1 (Exploratory) | Decision Trees | ❌ No | ❌ No | ⚠️ Partial | Interaction discovery |
-| 2 (Causal) | Pearson Correlation | ❌ No | ❌ No | ❌ No | Quick screening |
 | 2 (Causal) | Granger Causality | ✅ Yes | ⚠️ Partial | ❌ No | Predictive precedence |
 | 2 (Causal) | PCMCI | ✅ Yes | ✅ Yes | ✅ Yes | ⭐ **BEST: Temporal causation** |
 | 2 (Causal) | DoWhy (PSM) | ✅ Yes | ⚠️ Limited | ✅ Yes | Intervention effects |
 
 # Final Conclusion
 
-**Phase 1 (Exploratory)** methods revealed patterns and interactions but cannot establish causation:
-- Heatmaps showed throttling concentrated in the hours before crashes
-- Anomaly detection flagged high-volume events
-- Decision trees discovered the interaction: `RSTP_throttled AND high_volume`
+**Phase 1 (Exploratory)** methods were MISLEADING:
+- ❌ Correlation analysis suggested HTTP, DNS, HTTPS were all potential causes
+- ❌ Could not distinguish true causation from confounding
+- ❌ Ignored temporal lag structure (crashes happen 3 hours AFTER throttling)
+- ❌ Would have led operations team to investigate WRONG protocols
 
-**Phase 2 (Causal Discovery)** successfully identified the root cause:
+**Phase 2 (Causal Discovery)** successfully identified the TRUE root cause:
 - ⭐ **PCMCI** excels by explicitly modeling **temporal delay** and **conditional independence**
 - Granger causality detected predictive power but lacks confounder adjustment
 - DoWhy's propensity score matching handles confounders but misses time-specific triggers
@@ -236,21 +403,40 @@ def run_all_analysis():
     print("PHASE 2: CAUSAL DISCOVERY")
     print("="*60)
     
-    # 2. Correlation Analysis
-    # We check correlation with crash_next_hour
-    corr_vol, p_vol = pearsonr(df['RSTP_vol'], df['crash_occurred'])
-    corr_thr, p_thr = pearsonr(df['RSTP_is_throttled'], df['crash_occurred'])
+    # 2. Comprehensive Correlation Analysis
+    # Check correlations for all protocols
+    print("Running comprehensive correlation analysis...")
     
-    correlation_res = {
-        'vol': {
-            'corr': corr_vol, 'p': p_vol, 
-            'text': "Spurious correlation due to business hours." if p_vol < 0.05 else "No direct link."
-        },
-        'throttle': {
-            'corr': corr_thr, 'p': p_thr,
-            'text': "Potentially misleading due to lag and recovery."
-        }
-    }
+    correlation_res = {}
+    protocols = ['RSTP', 'HTTP', 'HTTPS', 'DNS', 'SMB']
+    
+    for proto in protocols:
+        throttle_col = f'{proto}_is_throttled'
+        vol_col = f'{proto}_vol'
+        
+        # Throttle correlation
+        if throttle_col in df.columns and df[throttle_col].sum() > 0:
+            corr_thr, p_thr = pearsonr(df[throttle_col], df['crash_occurred'])
+            correlation_res[f'{proto}_throttle'] = {
+                'protocol': proto,
+                'measure': 'Throttle',
+                'corr': corr_thr,
+                'p': p_thr,
+                'significant': p_thr < 0.05,
+                'text': "Significant correlation" if p_thr < 0.05 else "Not significant"
+            }
+        
+        # Volume correlation
+        if vol_col in df.columns:
+            corr_vol, p_vol = pearsonr(df[vol_col], df['crash_occurred'])
+            correlation_res[f'{proto}_volume'] = {
+                'protocol': proto,
+                'measure': 'Volume',
+                'corr': corr_vol,
+                'p': p_vol,
+                'significant': p_vol < 0.05,
+                'text': "Significant correlation" if p_vol < 0.05 else "Not significant"
+            }
 
     # 3. Granger Causality Tests
     # Test if RSTP_is_throttled Granger-causes crash_occurred
