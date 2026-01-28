@@ -1,2 +1,0 @@
-/home/robomotic/DevOps/CISCO/.venv/lib/python3.11/site-packages/statsmodels/tsa/stattools.py:1556: FutureWarning: verbose is deprecated since functions should not print results
-  warnings.warn(

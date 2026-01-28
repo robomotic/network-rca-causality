@@ -103,79 +103,10 @@ Inside the `output/` folder:
 - `scm_dag.dot`: Graphviz DOT file of the causal model.
 - `summary.md`: High-level statistics and crash timeline.
 
-## Causal Analysis
 
-The project includes a comprehensive 3-phase analytical pipeline for root cause analysis:
+## Visualization
 
-### Complete Pipeline
-
+To view the causal model:
 ```bash
-# 1. Run Simulation (365 days)
-python -m netflow_simulator.cli --days 365
-
-# 2. Run Full Analysis Pipeline (all 3 phases)
-python experiments/run_experiments.py
+dot -Tpng output/scm_dag.dot -o output/scm_dag.png
 ```
-
-This generates:
-- [experiments/RCA_REPORT.md](experiments/RCA_REPORT.md) - Comprehensive markdown report
-- [experiments/RCA_REPORT.html](experiments/RCA_REPORT.html) - Styled HTML version
-- Multiple visualizations (see below)
-
-### Phase 1: Exploratory (Non-Causal) Analysis
-
-**Purpose**: Pattern discovery and interaction detection (cannot prove causation)
-
-1. **Crash Proximity Heatmap** (`crash_proximity_heatmap.png`)
-   - Visualizes admin actions and traffic in 24h before crashes
-   - Shows temporal patterns but not causal relationships
-
-2. **Anomaly Detection** (`anomaly_detection.png`)
-   - Uses Isolation Forest to flag unusual traffic spikes
-   - Identifies outliers but doesn't establish causation
-
-3. **Decision Tree Classifier** (`decision_tree.png`)
-   - Reveals interaction patterns: "IF RSTP_throttled AND volume > threshold"
-   - Descriptive, not causal
-
-### Phase 2: Causal Discovery
-
-**Purpose**: Identify true causal mechanisms with time-lag and confounder handling
-
-1. **Simple Correlation** - ❌ Baseline (expected to fail)
-2. **Granger Causality** - ⚠️ Detects predictive precedence
-3. **PCMCI (Tigramite)** - ✅ **BEST**: Temporal causal discovery with lag detection
-4. **DoWhy (Propensity Score Matching)** - ⚠️ Handles confounders but limited on time lags
-
-**Key Output**: `causal_graph.png` - Visual representation of discovered temporal causal links
-
-### Phase 3: Validation (Recommendations)
-
-**Not yet automated - for future work:**
-- Synthetic intervention experiments (force throttling on/off)
-- Sensitivity analysis for unmeasured confounders
-
-### Individual Analysis Scripts
-
-If you want to run specific phases:
-
-```bash
-# Data preparation only
-python experiments/prepare_data.py
-
-# Exploratory analysis only
-python experiments/exploratory_analysis.py
-
-# Causal discovery only (without exploratory phase)
-python experiments/causal_discovery.py
-```
-
-### Expected Results
-
-The PCMCI algorithm should identify:
-- **Lag 1**: Strong signal (persistent throttling)
-- **Lag 3**: Significant link ⭐ (the TRUE 3-hour delay mechanism)
-
-Ground truth validation file: `output/ground_truth_faults.csv`
-
-Compares discovered causal links against `ground_truth_faults.csv`.
