@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netflow_simulator"
+version = "0.1.0"
+description = "A Netflow-style network traffic simulator with SCM/DAG modeling"
+readme = "README.md"
+authors = [{ name = "Robomotic", email = "robomotic@example.com" }]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "networkx>=3.0",
+    "scapy>=2.5.0",
+    "faker>=20.0.0",
+    "pandas>=2.0.0",
+    "pydantic>=2.0.0",
+    "click>=8.0.0",
+    "holidays>=0.30",
+    "pyyaml>=6.0"
+]
+
+[project.scripts]
+netflow-sim = "netflow_simulator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

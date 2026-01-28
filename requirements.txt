@@ -1,0 +1,10 @@
+networkx>=3.0
+scapy>=2.5.0
+faker>=20.0.0
+pandas>=2.0.0
+pydantic>=2.0.0
+click>=8.0.0
+holidays>=0.30
+pyyaml>=6.0
+pydot>=1.4.2
+matplotlib>=3.7.0
