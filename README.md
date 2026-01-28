@@ -15,13 +15,13 @@ A Python-based simulator generating hourly traffic data for a private network wi
 
 ### Causal Mechanism (Ground Truth)
 
-The simulator implements a **deterministic causal chain** designed to be discoverable by causal inference methods while resisting naive correlation analysis:
+The simulator implements a **causal mechanism** designed to be discoverable by causal inference methods while resisting naive correlation analysis:
 
 ```
 RSTP Traffic Volume > 10KB  +  RSTP Throttled  →  [3-hour delay]  →  System Crash (80% probability)
 ```
 
-**Interaction Effects** (all must be true for crash to trigger):
+**Interaction Effects** (all must be true for crash risk to occur):
 - RSTP protocol is currently throttled
 - RSTP traffic volume exceeds 10KB threshold
 - Active workstations > 70% of maximum (100)
@@ -29,7 +29,7 @@ RSTP Traffic Volume > 10KB  +  RSTP Throttled  →  [3-hour delay]  →  System 
 
 **Time-Delayed Causation**: When all conditions are met, a crash is scheduled for **3 hours later**. This lag defeats simple contemporaneous correlation analysis and requires time-series causal discovery methods (e.g., PCMCI with appropriate lag parameters).
 
-**Zero Random Crashes**: There are NO random crashes. Every crash has a deterministic causal antecedent (RSTP throttling + volume threshold).
+**Probabilistic Crash Mechanism**: When all conditions are satisfied (RSTP throttled + volume > 10KB + workstations > 70 + business hours), the system has an **80% probability** of crashing 3 hours later. This creates realistic statistical noise while maintaining a clear causal structure. There are NO purely random crashes—every crash requires the specific causal conditions to be met, but not all qualifying events result in crashes (simulating real-world system resilience).
 
 ### Confounding Behavior
 
@@ -63,6 +63,26 @@ This simulation is designed as a benchmark for causal discovery algorithms:
 | DoWhy/Backdoor | **Should Succeed** - Conditioning on confounders should reveal true effect |
 
 **Ground Truth File**: After simulation, check `output/ground_truth_faults.csv` for the actual causal triggers.
+
+### TODO: Missing Confounder in Causal Analysis
+
+⚠️ **CRITICAL:** The current causal analysis experiments (`experiments/prepare_data.py`, `experiments/causal_discovery.py`) do NOT include `active_workstations` as a variable, despite it being a required condition for crashes.
+
+**Impact:**
+- PCMCI is missing a critical confounder (workstations → RSTP traffic AND workstations → crash risk)
+- DoWhy causal graph is incomplete (missing backdoor path through workstation count)
+- May create spurious correlations with SMB/RDP (high workstations → more SMB traffic + enables crashes)
+
+**Required Changes:**
+1. Add `active_workstations` to causal variable list in `experiments/prepare_data.py`
+2. Update DoWhy causal graph to include:
+   ```
+   active_workstations -> RSTP_vol;
+   active_workstations -> SMB_vol;
+   active_workstations -> RDP_vol;
+   active_workstations -> crash_occurred;
+   ```
+3. Re-run experiments to validate whether controlling for workstation count improves causal discovery accuracy
 
 ## Installation
 
