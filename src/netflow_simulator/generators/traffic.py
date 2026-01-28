@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import datetime
 import random
 from ..core.appliance import RouterConfig, ActionType, ProtocolState
@@ -16,14 +16,21 @@ class FlowRecord:
         self.action = action
 
 class TrafficGenerator:
-    def __init__(self, router_config: RouterConfig, workstation_model: WorkstationModel):
+    def __init__(self, router_config: RouterConfig, workstation_model: WorkstationModel, 
+                 confounder_settings: Optional[Dict] = None):
         self.router_config = router_config
         self.workstation_model = workstation_model
+        self.confounder_settings = confounder_settings or {'enabled': False, 'levels': [], 'multiplier': 1.0}
+        
         # Simplified subnet assumptions
         self.internal_subnet = "192.168.1."
         self.external_ips = ["8.8.8.8", "1.1.1.1", "20.112.52.29", "142.250.187.174", "104.21.5.7"]
 
-    def generate_hourly_traffic(self, timestamp: datetime.datetime, is_workday: bool) -> List[FlowRecord]:
+    def _is_conf_active(self, level: int) -> bool:
+        return self.confounder_settings['enabled'] and level in self.confounder_settings['levels']
+
+    def generate_hourly_traffic(self, timestamp: datetime.datetime, is_workday: bool, 
+                                 hours_since_reboot: int = 999) -> List[FlowRecord]:
         hour = timestamp.hour
         workstations = self.workstation_model.get_count()
         records = []
@@ -34,8 +41,42 @@ class TrafficGenerator:
             # 1. Determine base volume
             factor = proto_def.get_hourly_volume_factor(hour, is_workday)
             
+            # --- Confounding Logic ---
+            
+            # Level 4: Post-Crash Recovery Surge (Reverse Causation)
+            # Systems reconnecting/syncing after being down
+            if self._is_conf_active(4) and hours_since_reboot <= 2:
+                if name in ["DNS", "HTTP", "HTTPS", "NTP"]:
+                    factor *= self.confounder_settings['multiplier'] * (3 - hours_since_reboot)
+            
+            # Level 3: Workstation-Driven Correlation (Common Cause)
+            # Make RSTP and SMB/RDP even more sensitive to workstation spikes
+            if self._is_conf_active(3):
+                if name in ["RSTP", "SMB", "RDP"]:
+                    # If workstation count is high, amplify these protocols specifically
+                    if workstations > 150:
+                        factor *= self.confounder_settings['multiplier']
+            
+            # Level 5: Lagged Confounder (HTTP spike 3h before potential crashes)
+            # True cause is RSTP throttle + volume during 9-17.
+            # We want HTTP to spike 3h before the CRASH triggered by these conditions.
+            # Crash triggers at T+3. So if conditions met at T, crash at T+3.
+            # If we make HTTP spike at T, it will look causal to the crash at T+3.
+            if self._is_conf_active(5) and name == "HTTP":
+                if is_workday and 9 <= hour <= 17:
+                    # Sync with RSTP's peak hours to mimic the trigger timing
+                    factor *= self.confounder_settings['multiplier']
+
             # Baseline: ~1-10 flows per workstation per hour per protocol depending on usage
             num_flows = int(workstations * factor * random.uniform(0.5, 2.0))
+            
+            # Level 2: Correlated Protocol Traffic
+            # Couple DNS and HTTP/HTTPS traffic
+            if self._is_conf_active(2):
+                if name in ["HTTP", "HTTPS", "DNS"]:
+                    # Create a "group spike" effect
+                    if random.random() < 0.2: # 20% chance of a group burst
+                        num_flows = int(num_flows * self.confounder_settings['multiplier'])
             
             if state.action == ActionType.DENY:
                 # Still generate flows, but mark as denied/dropped

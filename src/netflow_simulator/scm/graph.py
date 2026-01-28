@@ -1,5 +1,5 @@
 import networkx as nx
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import pydot
 
 class SimulationSCM:
@@ -7,9 +7,13 @@ class SimulationSCM:
     Structural Causal Model for Network Traffic Simulation.
     Defines the dependencies between various simulation factors.
     """
-    def __init__(self):
+    def __init__(self, confounder_settings: Optional[Dict] = None):
         self.graph = nx.DiGraph()
+        self.confounder_settings = confounder_settings or {'enabled': False, 'levels': [], 'multiplier': 1.0}
         self._build_graph()
+
+    def _is_conf_active(self, level: int) -> bool:
+        return self.confounder_settings['enabled'] and level in self.confounder_settings['levels']
 
     def _build_graph(self):
         """Builds the DAG of the simulation."""
@@ -59,6 +63,30 @@ class SimulationSCM:
         
         self.graph.add_edge("TrafficVolume", "ProtocolTraffic")
         self.graph.add_edge("ProtocolConfig", "ProtocolTraffic")
+
+        # --- Confounder Spurious Edges ---
+        
+        # Level 1: Admin reactions to traffic
+        if self._is_conf_active(1):
+            self.graph.add_edge("ProtocolTraffic", "AdminIntervention", label="spurious_reactive")
+            
+        # Level 2: Cross-protocol correlation
+        if self._is_conf_active(2):
+            self.graph.add_edge("ProtocolTraffic", "ProtocolTraffic", label="group_burst")
+
+        # Level 3: Workstation common cause
+        if self._is_conf_active(3):
+            # Already exists (WorkstationCount -> TrafficVolume), but reinforcing the SMB/RSTP link
+            pass
+            
+        # Level 4: Reverse causation (Reboot -> Traffic)
+        if self._is_conf_active(4):
+            # RebootEvent -> ProtocolTraffic already exists but now it's a + surge rather than - drop
+            pass
+            
+        # Level 5: Lagged confounder
+        if self._is_conf_active(5):
+            self.graph.add_edge("HourOfDay", "ProtocolTraffic", label="lagged_mimic")
         
         # Faults depend on traffic and config (e.g. throttling + high volume)
         self.graph.add_edge("ProtocolTraffic", "SystemFault")

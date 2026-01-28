@@ -28,11 +28,15 @@ class AdminActor:
     HIGH_TRAFFIC_MULTIPLIER = 3.0   # 3x more likely when traffic is high (CONFOUNDER!)
     RSTP_THROTTLE_BIAS = 4.0        # 4x more likely to throttle RSTP than other protocols
     
-    def __init__(self, router_config: RouterConfig):
+    def __init__(self, router_config: RouterConfig, confounder_settings: Optional[Dict] = None):
         self.router_config = router_config
         self.pending_tasks: Deque[ScheduledTask] = deque()
         self.admin_log: List[Dict] = []
         self.last_hour_traffic: Dict[str, float] = {}  # Track traffic for reactive decisions
+        self.confounder_settings = confounder_settings or {'enabled': False, 'levels': [], 'multiplier': 1.0}
+
+    def _is_conf_active(self, level: int) -> bool:
+        return self.confounder_settings['enabled'] and level in self.confounder_settings['levels']
 
     def tick(self, timestamp: datetime.datetime, is_workday: bool, 
              current_traffic: Optional[List] = None):
@@ -48,12 +52,15 @@ class AdminActor:
         # Calculate traffic levels if provided (for confounding behavior)
         traffic_level = 0.0
         rstp_traffic = 0.0
+        web_traffic = 0.0
         if current_traffic:
             traffic_level = sum(r.bytes for r in current_traffic) / (1024 * 1024)  # MB
             rstp_traffic = sum(r.bytes for r in current_traffic if r.protocol == "RSTP")
+            web_traffic = sum(r.bytes for r in current_traffic if r.protocol in ["HTTP", "HTTPS"]) / (1024 * 1024)
             self.last_hour_traffic = {
                 "total_mb": traffic_level,
-                "rstp_bytes": rstp_traffic
+                "rstp_bytes": rstp_traffic,
+                "web_mb": web_traffic
             }
         
         # 1. Process pending reversions
@@ -104,6 +111,17 @@ class AdminActor:
         
         # Weight protocols - RSTP has strong bias
         protocol_weights = {}
+        
+        # Confounder Level 1: HTTP/HTTPS traffic triggers RSTP investigation
+        http_https_traffic = 0.0
+        if self._is_conf_active(1) and self.last_hour_traffic:
+            # Sum up HTTP and HTTPS traffic
+            # Note: we need to ensure current_traffic was processed in tick()
+            # It's already stored in last_hour_traffic if it was passed.
+            # But traffic_generator generates records with protocol names.
+            # We don't have per-protocol breakdown in last_hour_traffic yet, let's fix tick later.
+            pass
+
         for proto_name in PROTOCOLS.keys():
             weight = 1.0
             if proto_name == "RSTP":
@@ -111,6 +129,11 @@ class AdminActor:
                 # REACTIVE: Even more likely if RSTP traffic was high
                 if rstp_traffic > 5000:  # > 5KB
                     weight *= 2.0
+                
+                # Confounder Level 1: Spurious reaction to web traffic spikes
+                if self._is_conf_active(1) and self.last_hour_traffic.get('web_mb', 0) > 5:
+                    weight *= self.confounder_settings['multiplier']
+            
             protocol_weights[proto_name] = weight
         
         # Weighted random selection

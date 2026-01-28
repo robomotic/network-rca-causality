@@ -36,11 +36,15 @@ class FaultEngine:
     MIN_WORKSTATIONS_FOR_FAULT = 70  # Interaction effect: need enough endpoints
     REQUIRE_BUSINESS_HOURS = True  # Interaction effect: only during 9-17
     
-    def __init__(self, router_config: RouterConfig):
+    def __init__(self, router_config: RouterConfig, confounder_settings: Optional[Dict] = None):
         self.router_config = router_config
         self.fault_log: List[FaultEvent] = []
         self.pending_crashes: deque = deque()  # Delayed crashes waiting to trigger
         self.ground_truth_log: List[Dict] = []  # For validation (hidden from analysis)
+        self.confounder_settings = confounder_settings or {'enabled': False, 'levels': [], 'multiplier': 1.0}
+
+    def _is_conf_active(self, level: int) -> bool:
+        return self.confounder_settings['enabled'] and level in self.confounder_settings['levels']
 
     def check_for_faults(self, timestamp: datetime.datetime, traffic_records: List, 
                          workstation_count: int = 100) -> bool:

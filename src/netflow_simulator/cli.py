@@ -2,6 +2,7 @@ import click
 import datetime
 import holidays
 import pandas as pd
+import os
 from typing import List, Dict
 from tqdm import tqdm
 
@@ -19,25 +20,38 @@ from .exporters.csv_exporter import CSVExporter
 @click.option('--days', default=365, help='Number of days to simulate')
 @click.option('--output-dir', default='./output', help='Directory to save CSVs')
 @click.option('--country', default='US', help='Country for holiday calendar')
-def main(start_date, days, output_dir, country):
+@click.option('--use-confounders', is_flag=True, default=True, help='Enable confounding variables')
+@click.option('--confounder-level', multiple=True, type=int, default=[2, 3], 
+              help='Active confounding injections (1:Admin, 2:Traffic, 3:Network, 4:Recovery, 5:Lagged)')
+@click.option('--confounder-multiplier', default=2.0, help='Strength of confounding effects')
+def main(start_date, days, output_dir, country, use_confounders, confounder_level, confounder_multiplier):
     """
     Runs the Network Traffic Simulator.
     """
     # 1. Initialization
     click.echo(f"Initializing simulation for {days} days starting {start_date}...")
+    if use_confounders:
+        click.echo(f"Confounders enabled: {list(confounder_level)} (multiplier: {confounder_multiplier})")
     
     start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end_dt = start_dt + datetime.timedelta(days=days)
     
-    scm = SimulationSCM()
+    conf_settings = {
+        'enabled': use_confounders,
+        'levels': list(confounder_level),
+        'multiplier': confounder_multiplier
+    }
+
+    scm = SimulationSCM(confounder_settings=conf_settings)
     # Export SCM for reference
     scm.export_graph(os.path.join(output_dir, "scm_dag.dot") if os.path.exists(output_dir) else "scm_dag.dot")
 
     workstation_model = WorkstationModel()
     router_config = RouterConfig(supported_protocols=list(PROTOCOLS.keys()))
-    traffic_generator = TrafficGenerator(router_config, workstation_model)
-    admin_actor = AdminActor(router_config)
-    fault_engine = FaultEngine(router_config)
+    
+    traffic_generator = TrafficGenerator(router_config, workstation_model, confounder_settings=conf_settings)
+    admin_actor = AdminActor(router_config, confounder_settings=conf_settings)
+    fault_engine = FaultEngine(router_config, confounder_settings=conf_settings)
     exporter = CSVExporter(output_dir)
     
     holiday_cal = holidays.country_holidays(country)
@@ -75,7 +89,9 @@ def main(start_date, days, output_dir, country):
                 hours_since_reboot += 1
             else:
                 # -- Traffic Generation --
-                current_traffic_flows = traffic_generator.generate_hourly_traffic(current_dt, is_workday)
+                current_traffic_flows = traffic_generator.generate_hourly_traffic(
+                    current_dt, is_workday, hours_since_reboot=hours_since_reboot
+                )
                 
                 # -- Admin Actions (AFTER traffic, so admin can react to traffic levels) --
                 # This creates CONFOUNDING: admin throttles when traffic is high
